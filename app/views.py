@@ -18,19 +18,15 @@ def create_access_token(id):
 
 
 @csrf_exempt
-def validateToken(request):
-    body = json.loads(request.body)
-    token = body['token']
+def validateToken(request,token):
+    # body = json.loads(request.body)
+    # token = body['token']
     try:
         payload = jwt.decode(token, 'access_secret', algorithms='HS256')
-
-        return JsonResponse({
-            "message" : True
-        })
+        # print(f"payload {payload}")
+        return payload['user_id'] 
     except:
-        return JsonResponse({
-            "message" : False
-        })
+        return "Invalid Token"
 
 
 @csrf_exempt
@@ -67,10 +63,240 @@ def authenticate(request):
 
 @csrf_exempt
 def follow(request,id):
-	if request.method == "POST":
-		body = json.loads(request.body)
-		print(body)
+    if request.method == "POST":
 
-		return JsonResponse({
-			"message" : "success"
-			}) 
+        body = json.loads(request.body)
+        token = request.headers['Token']
+        # print(token)
+        userid = validateToken(request,token)
+        if userid == "Invalid Token":
+            return JsonResponse({
+                "message" : "Invalid token"
+                })
+        else:
+            user1 = User.objects.get(id=userid)
+            user2 = User.objects.get(id=id)
+            user1.following += 1
+            user2.follower += 1
+            user1.save()
+            user2.save()
+
+            return JsonResponse({
+            	"message" : "success"
+            	}) 
+
+    return JsonResponse({"message":"This is not post request"})
+
+@csrf_exempt
+def unfollow(request,id):
+    if request.method == "POST":
+
+        body = json.loads(request.body)
+        token = request.headers['Token']
+        # print(token)
+        userid = validateToken(request,token)
+        if userid == "Invalid Token":
+            return JsonResponse({
+                "message" : "Invalid token"
+                })
+        else:
+            user1 = User.objects.get(id=userid)
+            user2 = User.objects.get(id=id)
+            user1.following -= 1
+            user2.follower -= 1
+            user1.save()
+            user2.save()
+            
+            return JsonResponse({
+                "message" : "success"
+                }) 
+
+    return JsonResponse({"message":"This is not post request"})
+
+def user(request):
+    token = request.headers['token']
+    # print(token)
+    userid = validateToken(request,token)
+    # print(userid)
+    if userid == "Invalid Token":
+        return JsonResponse({
+            "message" : "Invalid token"
+            })
+    else:
+        user = User.objects.get(id=userid)
+        
+        return JsonResponse({
+            "message" : "success",
+            "Name" : user.name,
+            "follower" : user.follower,
+            "following" : user.following
+            })
+
+@csrf_exempt
+def posts(request):
+    if request.method == "POST":
+
+        body = json.loads(request.body)
+        token = request.headers['Token']
+        # print(token)
+        userid = validateToken(request,token)
+        if userid == "Invalid Token":
+            return JsonResponse({
+                "message" : "Invalid token"
+                })
+        else:
+            user = User.objects.get(id=userid)
+            title = body["title"]
+            description = body["description"]
+            post = Post.objects.create(title=title,description=description,user=user)
+            post.save()
+            
+            return JsonResponse({
+                "message" : "success",
+                "Post-Id" : post.id,
+                "title" : post.title,
+                "description" : post.description,
+                "time" : post.time
+                }) 
+
+    return JsonResponse({"message":"This is not post request"})
+
+@csrf_exempt
+def deletePost(request,id):
+    if request.method == "POST":
+        token = request.headers['Token']
+        # print(token)
+        userid = validateToken(request,token)
+        if userid == "Invalid Token":
+            return JsonResponse({
+                "message" : "Invalid token"
+                })
+        else:
+            user = User.objects.get(id=userid)
+            post = Post.objects.get(id = id)
+            post.delete();
+            
+            return JsonResponse({
+                "message" : "Post deleted",
+                })
+    return JsonResponse({"message" : "This is not post request"})
+
+@csrf_exempt
+def like(request,id):
+    if request.method == "POST":
+        token = request.headers['Token']
+        # print(token)
+        userid = validateToken(request,token)
+        if userid == "Invalid Token":
+            return JsonResponse({
+                "message" : "Invalid token"
+                })
+        else:
+            user = User.objects.get(id=userid)
+            post = Post.objects.get(id = id)
+            post.like += 1
+            post.save()
+            
+            return JsonResponse({
+                "message" : "Post liked",
+                })
+    return JsonResponse({"message" : "This is not post request"})
+
+@csrf_exempt
+def unlike(request,id):
+    if request.method == "POST":
+        token = request.headers['Token']
+        # print(token)
+        userid = validateToken(request,token)
+        if userid == "Invalid Token":
+            return JsonResponse({
+                "message" : "Invalid token"
+                })
+        else:
+            user = User.objects.get(id=userid)
+            post = Post.objects.get(id = id)
+            post.like -= 1
+            post.save()
+            
+            return JsonResponse({
+                "message" : "Post unliked",
+                })
+    return JsonResponse({"message" : "This is not post request"})
+
+@csrf_exempt
+def comment(request,id):
+    if request.method == "POST":
+        token = request.headers['Token']
+        # print(token)
+        userid = validateToken(request,token)
+        if userid == "Invalid Token":
+            return JsonResponse({
+                "message" : "Invalid token"
+                })
+        else:
+            user = User.objects.get(id=userid)
+            post = Post.objects.get(id = id)
+            body = json.loads(request.body)
+            desc = body['comment']
+            comment = Comment.objects.create(desc = desc,post = post)
+            comment.save()
+            
+            return JsonResponse({
+                "comment-id" : comment.id
+                })
+    return JsonResponse({"message" : "This is not post request"})
+
+
+def getpost(request,id):
+    token = request.headers['Token']
+    # print(token)
+    userid = validateToken(request,token)
+    if userid == "Invalid Token":
+        return JsonResponse({
+            "message" : "Invalid token"
+            })
+    else:
+        user = User.objects.get(id=userid)
+        post = Post.objects.get(id = id)
+        comments = Comment.objects.filter(post = post).all()
+        commentsDesc = []
+        for c in comments:
+            commentsDesc.append(c.desc)
+
+        commentsJson = json.dumps(commentsDesc)
+        print(commentsJson)
+
+        return JsonResponse({
+            "Post Id" : post.id,
+            "comments" : commentsJson,
+            "likes" : post.like
+            })
+
+
+def allpost(request):
+    token = request.headers['Token']
+    # print(token)
+    userid = validateToken(request,token)
+    if userid == "Invalid Token":
+        return JsonResponse({
+            "message" : "Invalid token"
+            })
+    else:
+        user = User.objects.get(id=userid)
+        posts = Post.objects.filter(user=user).all()
+
+        postList = []
+
+        for post in posts: 
+
+            postDict = {}
+            postDict['id'] = post.id
+            postDict['title'] = post.title
+            postDict['desc'] = post.description
+            postList.append(postDict)
+
+        postJson = json.dumps(postList)
+
+        return JsonResponse({
+            "Post" : postJson,
+            })
