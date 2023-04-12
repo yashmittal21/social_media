@@ -263,12 +263,12 @@ def getpost(request,id):
         for c in comments:
             commentsDesc.append(c.desc)
 
-        commentsJson = json.dumps(commentsDesc)
-        print(commentsJson)
+        # commentsJson = json.dumps(commentsDesc)
+        # print(commentsJson)
 
         return JsonResponse({
             "Post Id" : post.id,
-            "comments" : commentsJson,
+            "comments" : commentsDesc,
             "likes" : post.like
             })
 
@@ -285,12 +285,9 @@ def allpost(request):
        user = User.objects.get(id=userid)
        posts = Post.objects.filter(user=user).all()
 
-
        postList = []
 
-
        for post in posts:
-
 
            postDict = {}
            postDict['id'] = post.id
@@ -306,9 +303,6 @@ def allpost(request):
            # print(descJson)
            postDict['comments'] = desc
            postList.append(postDict)
-
-
-       #postJson = json.dumps(postList)
 
 
        return JsonResponse({
