@@ -12,7 +12,7 @@ from django.contrib.auth.hashers import make_password,  check_password
 def create_access_token(id):
     return jwt.encode({
         'user_id': id,
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds = 60),
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds = 300),
         'iat': datetime.datetime.utcnow()
     }, 'access_secret', algorithm='HS256')
 
@@ -274,38 +274,43 @@ def getpost(request,id):
 
 
 def allpost(request):
-    token = request.headers['Token']
-    # print(token)
-    userid = validateToken(request,token)
-    if userid == "Invalid Token":
-        return JsonResponse({
-            "message" : "Invalid token"
-            })
-    else:
-        user = User.objects.get(id=userid)
-        posts = Post.objects.filter(user=user).all()
+   token = request.headers['Token']
+   # print(token)
+   userid = validateToken(request,token)
+   if userid == "Invalid Token":
+       return JsonResponse({
+           "message" : "Invalid token"
+           })
+   else:
+       user = User.objects.get(id=userid)
+       posts = Post.objects.filter(user=user).all()
 
-        postList = []
 
-        for post in posts: 
+       postList = []
 
-            postDict = {}
-            postDict['id'] = post.id
-            postDict['title'] = post.title
-            postDict['desc'] = post.description
-            # postDict['created_at'] = json.dumps(post.time)
-            comments = Comment.objects.filter(post=post).all()
-            desc = []
-            for c in comments:
-                desc.append(c.desc)
-            # print(desc)
-            descJson = json.dumps(desc)
-            # print(descJson)
-            postDict['comments'] = descJson
-            postList.append(postDict)
 
-        postJson = json.dumps(postList)
+       for post in posts:
 
-        return JsonResponse({
-            "Post" : postJson,
-            })
+
+           postDict = {}
+           postDict['id'] = post.id
+           postDict['title'] = post.title
+           postDict['desc'] = post.description
+           postDict['created_at'] = post.time.isoformat()
+           comments = Comment.objects.filter(post=post).all()
+           desc = []
+           for c in comments:
+               desc.append(c.desc)
+           # print(desc)
+           #descJson = json.dumps(desc)
+           # print(descJson)
+           postDict['comments'] = desc
+           postList.append(postDict)
+
+
+       #postJson = json.dumps(postList)
+
+
+       return JsonResponse({
+           "Post" : postList,
+           })
