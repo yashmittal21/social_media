@@ -293,6 +293,15 @@ def allpost(request):
             postDict['id'] = post.id
             postDict['title'] = post.title
             postDict['desc'] = post.description
+            # postDict['created_at'] = json.dumps(post.time)
+            comments = Comment.objects.filter(post=post).all()
+            desc = []
+            for c in comments:
+                desc.append(c.desc)
+            # print(desc)
+            descJson = json.dumps(desc)
+            # print(descJson)
+            postDict['comments'] = descJson
             postList.append(postDict)
 
         postJson = json.dumps(postList)
